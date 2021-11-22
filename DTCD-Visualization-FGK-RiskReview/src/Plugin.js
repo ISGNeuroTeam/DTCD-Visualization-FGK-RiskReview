@@ -5,10 +5,14 @@ import {
   PanelPlugin,
   LogSystemAdapter,
   EventSystemAdapter,
-  DataSourceSystemAdapter,
+  StorageSystemAdapter,
 } from './../../DTCD-SDK';
 
 export class Plugin extends PanelPlugin {
+
+  #titleColName;
+  #dataSource;
+  #storageSystem;
 
   static getRegistrationMeta() {
     return pluginMeta;
@@ -19,61 +23,56 @@ export class Plugin extends PanelPlugin {
 
     const logSystem = new LogSystemAdapter(guid, pluginMeta.name);
     const eventSystem = new EventSystemAdapter(guid);
-    const dataSourceSystem = new DataSourceSystemAdapter();
 
     eventSystem.registerPluginInstance(this);
-
-    this.guid = guid;
-    this.eventSystem = eventSystem;
-    this.dataSourceSystem = dataSourceSystem;
-    this.dataSourceSystemGUID = this.getGUID(this.getSystem('DataSourceSystem'));
+    this.#storageSystem = new StorageSystemAdapter();
 
     const { default: VueJS } = this.getDependence('Vue');
 
     const view = new VueJS({
-      data: () => ({ guid, logSystem, eventSystem }),
+      data: () => ({ guid, logSystem }),
       render: h => h(PluginComponent),
     }).$mount(selector);
 
     this.vueComponent = view.$children[0];
+    this.#dataSource = '';
+    this.#titleColName = '';
   }
 
-  async setPluginConfig(config = {}) {
-    const { dataSource } = config;
-    this.dataSource = dataSource;
+  setPluginConfig(config = {}) {
+    const { titleColName, dataSource } = config;
 
-    this.dataSourceSystem.createDataSource(dataSource);
-    this.eventSystem.subscribe(
-      this.dataSourceSystemGUID,
-      `${dataSource.name}-UPDATE`,
-      this.guid,
-      'loadData'
-    );
+    if (typeof titleColName !== 'undefined') {
+      this.#titleColName = titleColName;
+      this.vueComponent.setTitleColName(titleColName);
+    }
+
+    if (typeof dataSource !== 'undefined') {
+      this.#dataSource = dataSource;
+      const DS = this.getSystem('DataSourceSystem').getDataSource(this.#dataSource);
+      if (DS.status === 'success') {
+        const data = this.#storageSystem.session.getRecord(this.#dataSource);
+        this.loadData(data);
+      }
+    }
   }
 
   loadData(data) {
-    this.vueComponent.setDataset(data.toArray());
+    this.vueComponent.setDataset(data);
     this.vueComponent.render();
   }
 
+  processDataSourceEvent(eventData) {
+    const { dataSource, status } = eventData;
+    this.#dataSource = dataSource;
+    const data = this.#storageSystem.session.getRecord(this.#dataSource);
+    this.loadData(data);
+  }
+
   getPluginConfig() {
-    if (this.dataSource) {
-      return {
-        dataSource: this.dataSource
-      }
-    } else return {
-      dataSource: {
-        type: 'OTL',
-        name: 'DS-1',
-        original_otl: `
-          | makeresults count=1
-          | eval title="Комплаенс риски",  plus=0, ost=0, cur=-60, risk=0, fact=0
-          | append [ | makeresults count=1 | eval title="Производственно-технологические риски",  plus=5, ost=0, cur=-50, risk=0, fact=5 ]
-          | append [ | makeresults count=1 | eval title="Финансовые риски",  plus=15, ost=0, cur=-40, risk=0, fact=15 ]
-          | append [ | makeresults count=1 | eval title="Технические и ресурсные риски",  plus=20, ost=0, cur=-70, risk=0, fact=20 ]
-          | append [ | makeresults count=1 | eval title="Коммерческие риски",  plus=0, ost=0, cur=-100, risk=-50, fact=-60 ]
-        `
-      },
-    };
+    const config = {};
+    if (this.#dataSource) config.dataSource = this.#dataSource;
+    if (this.#titleColName) config.titleColName = this.#titleColName;
+    return config;
   }
 }

@@ -1,10 +1,10 @@
 <template>
-  <div
+  <!-- <div
     v-if="isDataError"
     class="error"
     v-text="errorMessage"
-  />
-  <div v-else class="risk-review-container">
+  /> -->
+  <div class="risk-review-container">
     <div class="titles-container" :style="titlesContainerStyle">
       <div
         v-for="(title, i) in titles"
@@ -53,7 +53,7 @@ export default {
     chartPaddingInner: 0,
     chartPaddingOuter: 0,
     /** Chart user config data. */
-    titleColName: 'title',
+    titleColName: '',
     dataset: [],
     barParts: defaultBarParts,
   }),
@@ -70,6 +70,11 @@ export default {
   methods: {
     setDataset(data = []) {
       this.dataset = data;
+    },
+
+    setTitleColName(name = '') {
+      this.titleColName = name;
+      this.render();
     },
 
     setError(text = '', show = false) {
