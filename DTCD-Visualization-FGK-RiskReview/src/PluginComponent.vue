@@ -77,6 +77,10 @@ export default {
       this.render();
     },
 
+    setBarParts(barParts){
+      this.barParts=barParts
+    },
+
     setError(text = '', show = false) {
       this.errorMessage = text;
       this.isDataError = show;

@@ -1,5 +1,6 @@
 import pluginMeta from './Plugin.Meta';
 import PluginComponent from './PluginComponent.vue';
+import defaultBarParts from './utils/defaultBarParts';
 
 import {
   PanelPlugin,
@@ -9,8 +10,8 @@ import {
 } from './../../DTCD-SDK';
 
 export class Plugin extends PanelPlugin {
-
   #titleColName;
+  #barParts;
   #dataSourceName;
   #storageSystem;
   #guid;
@@ -21,7 +22,7 @@ export class Plugin extends PanelPlugin {
     return pluginMeta;
   }
 
-  constructor (guid, selector) {
+  constructor(guid, selector) {
     super();
 
     const logSystem = new LogSystemAdapter(guid, pluginMeta.name);
@@ -43,14 +44,20 @@ export class Plugin extends PanelPlugin {
     this.vueComponent = view.$children[0];
     this.#dataSourceName = '';
     this.#titleColName = '';
+    this.#barParts = defaultBarParts;
   }
 
   setPluginConfig(config = {}) {
-    const { titleColName, dataSource } = config;
+    const { titleColName, dataSource, barParts } = config;
 
     if (typeof titleColName !== 'undefined') {
       this.#titleColName = titleColName;
       this.vueComponent.setTitleColName(titleColName);
+    }
+
+    if (typeof barParts !== 'undefined') {
+      this.#barParts = barParts;
+      this.vueComponent.setBarParts(barParts);
     }
 
     if (typeof dataSource !== 'undefined') {
@@ -60,7 +67,7 @@ export class Plugin extends PanelPlugin {
           'DataSourceStatusUpdate',
           this.#guid,
           'processDataSourceEvent',
-          { dataSource: this.#dataSourceName, status: 'success' },
+          { dataSource: this.#dataSourceName, status: 'success' }
         );
       }
 
@@ -98,6 +105,7 @@ export class Plugin extends PanelPlugin {
     const config = {};
     if (this.#dataSourceName) config.dataSource = this.#dataSourceName;
     if (this.#titleColName) config.titleColName = this.#titleColName;
+    if (this.#barParts) config.barParts = this.#barParts;
     return config;
   }
 }
