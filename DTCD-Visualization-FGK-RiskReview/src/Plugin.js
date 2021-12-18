@@ -7,6 +7,7 @@ import {
   LogSystemAdapter,
   EventSystemAdapter,
   StorageSystemAdapter,
+  DataSourceSystemAdapter,
 } from './../../DTCD-SDK';
 
 export class Plugin extends PanelPlugin {
@@ -16,6 +17,7 @@ export class Plugin extends PanelPlugin {
   #storageSystem;
   #guid;
   #eventSystem;
+  #dataSourceSystem;
   #dataSourceSystemGUID;
 
   static getRegistrationMeta() {
@@ -32,6 +34,7 @@ export class Plugin extends PanelPlugin {
     this.#guid = guid;
     this.#eventSystem = eventSystem;
     this.#storageSystem = new StorageSystemAdapter();
+    this.#dataSourceSystem = new DataSourceSystemAdapter();
     this.#dataSourceSystemGUID = this.getGUID(this.getSystem('DataSourceSystem'));
 
     const { default: VueJS } = this.getDependence('Vue');
@@ -45,6 +48,18 @@ export class Plugin extends PanelPlugin {
     this.#dataSourceName = '';
     this.#titleColName = '';
     this.#barParts = defaultBarParts;
+  }
+
+  loadData(data) {
+    this.vueComponent.setDataset(data);
+    this.vueComponent.render();
+  }
+
+  processDataSourceEvent(eventData) {
+    const { dataSource, status } = eventData;
+    this.#dataSourceName = dataSource;
+    const data = this.#storageSystem.session.getRecord(this.#dataSourceName);
+    this.loadData(data);
   }
 
   setPluginConfig(config = {}) {
@@ -81,24 +96,12 @@ export class Plugin extends PanelPlugin {
         { dataSource, status: 'success' }
       );
 
-      const DS = this.getSystem('DataSourceSystem').getDataSource(this.#dataSourceName);
+      const DS = this.#dataSourceSystem.getDataSource(this.#dataSourceName);
       if (DS.status === 'success') {
         const data = this.#storageSystem.session.getRecord(this.#dataSourceName);
         this.loadData(data);
       }
     }
-  }
-
-  loadData(data) {
-    this.vueComponent.setDataset(data);
-    this.vueComponent.render();
-  }
-
-  processDataSourceEvent(eventData) {
-    const { dataSource, status } = eventData;
-    this.#dataSourceName = dataSource;
-    const data = this.#storageSystem.session.getRecord(this.#dataSourceName);
-    this.loadData(data);
   }
 
   getPluginConfig() {
@@ -107,5 +110,42 @@ export class Plugin extends PanelPlugin {
     if (this.#titleColName) config.titleColName = this.#titleColName;
     if (this.#barParts) config.barParts = this.#barParts;
     return config;
+  }
+
+  setFormSettings(config) {
+    this.setPluginConfig(config);
+  }
+
+  getFormSettings() {
+    return {
+      fields: [
+        {
+          component: 'title',
+          propValue: 'Общие настройки',
+        },
+        {
+          component: 'text',
+          propName: 'titleColName',
+          attrs: {
+            label: 'Имя колонки с заголовками',
+            propValue: 'title',
+            required: true,
+          },
+        },
+        {
+          component: 'title',
+          propValue: 'Источник данных',
+        },
+        {
+          component: 'datasource',
+          propName: 'dataSource',
+          attrs: {
+            label: 'Выберите источник данных',
+            placeholder: 'Выберите значение',
+            required: true,
+          },
+        },
+      ],
+    };
   }
 }
