@@ -1,0 +1,42 @@
+export default [
+  {
+    id: 'plus',
+    type: 'bar',
+    fill: '#4CD964',
+    title: 'Положительное влияние',
+    isTitleShow: false,
+    isFullHeight: true,
+  },
+  {
+    id: 'ost',
+    type: 'bar',
+    fill: '#938FA0',
+    title: 'Остаточная оценка',
+    isTitleShow: false,
+    isFullHeight: true,
+  },
+  {
+    id: 'cur',
+    type: 'bar',
+    title: 'Текущая оценка',
+    fill: '#C6C6D4',
+    isTitleShow: false,
+    isFullHeight: true,
+  },
+  {
+    id: 'risk',
+    type: 'line',
+    fill: '#CD5D67',
+    title: 'Риск аппетит',
+    isTitleShow: true,
+    isFullHeight: false,
+  },
+  {
+    id: 'fact',
+    type: 'bar',
+    fill: '#252230',
+    title: 'Факт',
+    isTitleShow: true,
+    isFullHeight: false,
+  },
+];
