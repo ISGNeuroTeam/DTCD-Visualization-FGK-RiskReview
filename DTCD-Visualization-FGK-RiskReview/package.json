@@ -1,9 +1,9 @@
 {
-  "name": "dtcd-visualization-barchart",
+  "name": "dtcd-visualization-fgk-riskreview",
   "version": "0.1.0",
-  "description": "Panel with barchart visualization",
+  "description": "Panel with visualization for risk review",
   "private": true,
-  "homepage": "https://github.com/ISGNeuroTeam/DTCD-Visualization-BarChart",
+  "homepage": "https://github.com/ISGNeuroTeam/DTCD-Visualization-FGK-RiskReview",
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -cw",

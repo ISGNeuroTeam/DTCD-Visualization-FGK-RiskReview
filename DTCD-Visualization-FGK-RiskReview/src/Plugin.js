@@ -10,7 +10,7 @@ import {
   DataSourceSystemAdapter,
 } from './../../DTCD-SDK';
 
-export class Plugin extends PanelPlugin {
+export class VisualizationFgkRiskReview extends PanelPlugin {
   #titleColName;
   #barParts;
   #dataSourceName;
@@ -119,10 +119,6 @@ export class Plugin extends PanelPlugin {
   getFormSettings() {
     return {
       fields: [
-        {
-          component: 'title',
-          propValue: 'Общие настройки',
-        },
         {
           component: 'text',
           propName: 'titleColName',
