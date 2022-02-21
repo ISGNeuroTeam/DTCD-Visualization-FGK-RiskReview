@@ -11,6 +11,7 @@ import {
 } from './../../DTCD-SDK';
 
 export class VisualizationFgkRiskReview extends PanelPlugin {
+
   #titleColName;
   #barParts;
   #dataSourceName;
@@ -27,15 +28,18 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
   constructor(guid, selector) {
     super();
 
-    const logSystem = new LogSystemAdapter(guid, pluginMeta.name);
-    const eventSystem = new EventSystemAdapter(guid);
+    const logSystem = new LogSystemAdapter('0.5.0', guid, pluginMeta.name);
+    const eventSystem = new EventSystemAdapter('0.4.0', guid);
 
     eventSystem.registerPluginInstance(this);
     this.#guid = guid;
     this.#eventSystem = eventSystem;
-    this.#storageSystem = new StorageSystemAdapter();
-    this.#dataSourceSystem = new DataSourceSystemAdapter();
-    this.#dataSourceSystemGUID = this.getGUID(this.getSystem('DataSourceSystem'));
+    this.#storageSystem = new StorageSystemAdapter('0.5.0');
+    this.#dataSourceSystem = new DataSourceSystemAdapter('0.2.0');
+
+    this.#dataSourceSystemGUID = this.getGUID(
+      this.getSystem('DataSourceSystem', '0.2.0')
+    );
 
     const { default: VueJS } = this.getDependence('Vue');
 
@@ -97,6 +101,7 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
       );
 
       const DS = this.#dataSourceSystem.getDataSource(this.#dataSourceName);
+
       if (DS.status === 'success') {
         const data = this.#storageSystem.session.getRecord(this.#dataSourceName);
         this.loadData(data);
@@ -144,4 +149,5 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
       ],
     };
   }
+
 }
