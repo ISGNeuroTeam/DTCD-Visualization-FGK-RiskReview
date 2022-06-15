@@ -12,14 +12,20 @@ import {
 
 export class VisualizationFgkRiskReview extends PanelPlugin {
 
-  #titleColName;
-  #barParts;
-  #dataSourceName;
-  #storageSystem;
+  #id;
   #guid;
+  #logSystem;
   #eventSystem;
+  #storageSystem;
   #dataSourceSystem;
   #dataSourceSystemGUID;
+  #vueComponent;
+
+  #config = {
+    titleColName: 'title',
+    barParts: defaultBarParts,
+    dataSource: '',
+  };
 
   static getRegistrationMeta() {
     return pluginMeta;
@@ -28,12 +34,11 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
   constructor(guid, selector) {
     super();
 
-    const logSystem = new LogSystemAdapter('0.5.0', guid, pluginMeta.name);
-    const eventSystem = new EventSystemAdapter('0.4.0', guid);
-
-    eventSystem.registerPluginInstance(this);
+    this.#id = `${pluginMeta.name}[${guid}]`;
     this.#guid = guid;
-    this.#eventSystem = eventSystem;
+    this.#logSystem = new LogSystemAdapter('0.5.0', guid, pluginMeta.name);
+    this.#eventSystem = new EventSystemAdapter('0.4.0', guid);
+    this.#eventSystem.registerPluginInstance(this);
     this.#storageSystem = new StorageSystemAdapter('0.5.0');
     this.#dataSourceSystem = new DataSourceSystemAdapter('0.2.0');
 
@@ -44,77 +49,84 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
     const { default: VueJS } = this.getDependence('Vue');
 
     const view = new VueJS({
-      data: () => ({ guid, logSystem }),
+      data: () => ({}),
       render: h => h(PluginComponent),
     }).$mount(selector);
 
-    this.vueComponent = view.$children[0];
-    this.#dataSourceName = '';
-    this.#titleColName = '';
-    this.#barParts = defaultBarParts;
+    this.#vueComponent = view.$children[0];
+    this.#logSystem.debug(`${this.#id} initialization complete`);
+    this.#logSystem.info(`${this.#id} initialization complete`);
   }
 
   loadData(data) {
-    this.vueComponent.setDataset(data);
-    this.vueComponent.render();
+    this.#vueComponent.setDataset(data);
+    this.#vueComponent.render();
   }
 
   processDataSourceEvent(eventData) {
     const { dataSource, status } = eventData;
-    this.#dataSourceName = dataSource;
-    const data = this.#storageSystem.session.getRecord(this.#dataSourceName);
+    const data = this.#storageSystem.session.getRecord(dataSource);
+    this.#logSystem.debug(
+      `${this.#id} process DataSourceStatusUpdate({ dataSource: ${dataSource}, status: ${status} })`
+    );
     this.loadData(data);
   }
 
   setPluginConfig(config = {}) {
-    const { titleColName, dataSource, barParts } = config;
+    this.#logSystem.debug(`Set new config to ${this.#id}`);
+    this.#logSystem.info(`Set new config to ${this.#id}`);
 
-    if (typeof titleColName !== 'undefined') {
-      this.#titleColName = titleColName;
-      this.vueComponent.setTitleColName(titleColName);
-    }
+    const configProps = Object.keys(this.#config);
 
-    if (typeof barParts !== 'undefined') {
-      this.#barParts = barParts;
-      this.vueComponent.setBarParts(barParts);
-    }
+    for (const [prop, value] of Object.entries(config)) {
+      if (!configProps.includes(prop)) continue;
 
-    if (typeof dataSource !== 'undefined') {
-      if (this.#dataSourceName) {
-        this.#eventSystem.unsubscribe(
+      if (prop === 'titleColName') this.#vueComponent.setTitleColName(value);
+      if (prop === 'barParts') this.#vueComponent.setBarParts(value);
+
+      if (prop === 'dataSource' && value) {
+        if (this.#config[prop]) {
+          this.#logSystem.debug(
+            `Unsubscribing ${this.#id} from DataSourceStatusUpdate({ dataSource: ${this.#config[prop]}, status: success })`
+          );
+          this.#eventSystem.unsubscribe(
+            this.#dataSourceSystemGUID,
+            'DataSourceStatusUpdate',
+            this.#guid,
+            'processDataSourceEvent',
+            { dataSource: this.#config[prop], status: 'success' },
+            );
+          }
+
+        const dsNewName = value;
+
+        this.#logSystem.debug(
+          `Subscribing ${this.#id} for DataSourceStatusUpdate({ dataSource: ${dsNewName}, status: success })`
+        );
+
+        this.#eventSystem.subscribe(
           this.#dataSourceSystemGUID,
           'DataSourceStatusUpdate',
           this.#guid,
           'processDataSourceEvent',
-          { dataSource: this.#dataSourceName, status: 'success' }
+          { dataSource: dsNewName, status: 'success' },
         );
+
+        const ds = this.#dataSourceSystem.getDataSource(dsNewName);
+
+        if (ds && ds.status === 'success') {
+          const data = this.#storageSystem.session.getRecord(dsNewName);
+          this.loadData(data);
+        }
       }
 
-      this.#dataSourceName = dataSource;
-
-      this.#eventSystem.subscribe(
-        this.#dataSourceSystemGUID,
-        'DataSourceStatusUpdate',
-        this.#guid,
-        'processDataSourceEvent',
-        { dataSource, status: 'success' }
-      );
-
-      const DS = this.#dataSourceSystem.getDataSource(this.#dataSourceName);
-
-      if (DS.status === 'success') {
-        const data = this.#storageSystem.session.getRecord(this.#dataSourceName);
-        this.loadData(data);
-      }
+      this.#config[prop] = value;
+      this.#logSystem.debug(`${this.#id} config prop value "${prop}" set to "${value}"`);
     }
   }
 
   getPluginConfig() {
-    const config = {};
-    if (this.#dataSourceName) config.dataSource = this.#dataSourceName;
-    if (this.#titleColName) config.titleColName = this.#titleColName;
-    if (this.#barParts) config.barParts = this.#barParts;
-    return config;
+    return { ...this.#config, barParts: [...this.#config.barParts] };
   }
 
   setFormSettings(config) {
@@ -125,13 +137,8 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
     return {
       fields: [
         {
-          component: 'text',
-          propName: 'titleColName',
-          attrs: {
-            label: 'Имя колонки с заголовками',
-            propValue: 'title',
-            required: true,
-          },
+          component: 'title',
+          propValue: 'Общие настройки',
         },
         {
           component: 'title',
@@ -144,6 +151,13 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
             label: 'Выберите источник данных',
             placeholder: 'Выберите значение',
             required: true,
+          },
+        },
+        {
+          component: 'text',
+          propName: 'titleColName',
+          attrs: {
+            label: 'Имя колонки с заголовками',
           },
         },
       ],
