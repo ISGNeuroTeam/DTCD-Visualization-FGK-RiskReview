@@ -2,7 +2,7 @@ export default [
   {
     id: 'plus',
     type: 'bar',
-    fill: '#4CD964',
+    fill: 'var(--success)',
     title: 'Положительное влияние',
     isTitleShow: false,
     isFullHeight: true,
@@ -10,7 +10,7 @@ export default [
   {
     id: 'ost',
     type: 'bar',
-    fill: '#938FA0',
+    fill: 'var(--text_secondary)',
     title: 'Остаточная оценка',
     isTitleShow: false,
     isFullHeight: true,
@@ -19,14 +19,14 @@ export default [
     id: 'cur',
     type: 'bar',
     title: 'Текущая оценка',
-    fill: '#C6C6D4',
+    fill: 'var(--border)',
     isTitleShow: false,
     isFullHeight: true,
   },
   {
     id: 'risk',
     type: 'line',
-    fill: '#CD5D67',
+    fill: 'var(--pink)',
     title: 'Риск аппетит',
     isTitleShow: true,
     isFullHeight: false,
@@ -34,7 +34,7 @@ export default [
   {
     id: 'fact',
     type: 'bar',
-    fill: '#252230',
+    fill: 'var(--title)',
     title: 'Факт',
     isTitleShow: true,
     isFullHeight: false,

@@ -1,11 +1,10 @@
 <template>
-  <!-- <div
-    v-if="isDataError"
-    class="error"
-    v-text="errorMessage"
-  /> -->
-  <div class="risk-review-container">
-    <div class="titles-container" :style="titlesContainerStyle">
+  <div class="FGKRiskReview">
+    <div v-if="isDataError" class="DataError">
+      <span class="FontIcon name_infoCircleOutline Icon"></span>
+      {{ errorMessage }}
+    </div>
+    <div v-show="!isDataError" class="titles-container" :style="titlesContainerStyle">
       <div
         v-for="(title, i) in titles"
         :key="`t-${i}`"
@@ -17,8 +16,8 @@
         v-text="title"
       />
     </div>
-    <div ref="svgContainer" class="svg-container"/>
-    <div class="legend-container">
+    <div v-show="!isDataError" ref="svgContainer" class="svg-container"/>
+    <div v-show="!isDataError" class="legend-container">
       <div
         v-for="(part, i) in barParts"
         :key="`legend-${i}`"
@@ -30,18 +29,17 @@
     </div>
   </div>
 </template>
-
+ 
 <script>
 import defaultBarParts from './utils/defaultBarParts';
 
 export default {
   name: 'PluginComponent',
-  data: (self) => ({
-    logSystem: self.$root.logSystem,
-    eventSystem: self.$root.eventSystem,
+  data: () => ({
     /** Chart technical data. */
     isDataError: false,
     errorMessage: '',
+    dataAttr: '',
     svg: null,
     width: 0,
     height: 0,
@@ -67,6 +65,13 @@ export default {
       return this.dataset.map(ds => ds[this.titleColName]);
     },
   },
+  mounted() {
+    const { svgContainer } = this.$refs;
+    const attrs = svgContainer.getAttributeNames();
+    /** Used to support scoped styles. */
+    this.dataAttr = attrs.find(attr => attr.startsWith('data-'));
+    this.render();
+  },
   methods: {
     setDataset(data = []) {
       this.dataset = data;
@@ -78,7 +83,8 @@ export default {
     },
 
     setBarParts(barParts){
-      this.barParts=barParts
+      this.barParts = barParts;
+      this.render();
     },
 
     setError(text = '', show = false) {
@@ -93,6 +99,7 @@ export default {
         return this.setError(error, true);
       }
 
+      this.setError('', false);
       this.$nextTick(() => {
         this.clearSvgContainer();
         this.prepareRenderData();
@@ -137,11 +144,13 @@ export default {
 
       this.svg = d3.select(svgContainer)
         .append('svg')
+        .attr(this.dataAttr, '')
         .attr('class', 'content')
         .append('g')
         .attr('transform', `translate(${this.marginX}, ${this.marginY})`);
 
       this.svg.append('rect')
+        .attr(this.dataAttr, '')
         .attr('class', 'chart-back')
         .attr('x', 0)
         .attr('y', 0)
@@ -185,8 +194,10 @@ export default {
         d3.select(this).remove();
       });
 
+      const dataAttr = this.dataAttr;
+
       axis.selectAll('.tick text').each(function() {
-        d3.select(this).attr('class', 'x-axis-tick-caption');
+        d3.select(this).attr(dataAttr, '').attr('class', 'x-axis-tick-caption');
       });
 
       axis.select('.domain').remove();
@@ -202,7 +213,7 @@ export default {
         if (type !== 'bar') continue;
 
         const {
-          fill = '#938FA0',
+          fill = 'var(--text_secondary)',
           isTitleShow = false,
           isFullHeight = true,
         } = part;
@@ -225,6 +236,7 @@ export default {
               const anchor = xData >= 0 ? 'start' : 'end';
               this.svg.append('text')
                 .text(xData)
+                .attr(this.dataAttr, '')
                 .attr('class', 'bar-text-caption')
                 .attr('fill', fill)
                 .attr('text-anchor', anchor)
@@ -240,14 +252,17 @@ export default {
           })
           .attr('fill', fill)
           .attr('height', height)
-          .attr('width', d => Math.abs(xScale(d[id]) - xScale(0)));
+          .attr('width', d => {
+            const width = Math.abs(xScale(d[id]) - xScale(0));
+            return isNaN(width) ? 0 : width;
+          });
       }
     },
 
     createLines() {
       const { xScale, yScale, barHeight, barParts } = this;
       for (const part of barParts) {
-        const { id, type, fill = '#CD5D67', isTitleShow = true } = part;
+        const { id, type, fill = 'var(--pink)', isTitleShow = true } = part;
 
         if (type !== 'line') continue;
 
@@ -265,6 +280,7 @@ export default {
           if (isTitleShow) {
             this.svg.append('text')
               .text(value)
+              .attr(this.dataAttr, '')
               .attr('class', 'bar-text-caption')
               .attr('fill', fill)
               .attr('text-anchor', 'end')
@@ -282,6 +298,87 @@ export default {
 };
 </script>
 
-<style lang="sass">
-@import ./styles/component
+<style lang="sass" scoped>
+*
+  box-sizing: border-box
+  margin: 0
+  padding: 0
+
+.FGKRiskReview
+  width: 100%
+  height: 100%
+  display: flex
+  font-family: 'Proxima Nova'
+  position: relative
+
+  .DataError
+    position: absolute
+    display: flex
+    width: 100%
+    height: 100%
+    align-items: center
+    justify-content: center
+    flex-direction: column
+    color: var(--text_secondary)
+    background-color: var(--background_main)
+
+    .Icon
+      color: var(--border_secondary)
+      font-size: 100px
+      margin-bottom: 8px
+
+  .titles-container
+    color: var(--text_main)
+    font-size: 15px
+
+    .bar-title
+      display: flex
+      align-items: center
+      padding-left: 16px
+      line-height: 18px
+
+  .legend-container
+    display: flex
+    flex-direction: column
+    justify-content: center
+
+    .item
+      display: flex
+      align-items: center
+      color: var(--text_main)
+      font-size: 15px
+      line-height: 18px
+
+      &:not(:last-child)
+        margin-bottom: 20px
+
+      .mark
+        flex-shrink: 0
+        min-width: 18px
+        height: 18px
+
+      .text
+        padding-left: 10px
+        padding-right: 16px
+
+  .svg-container
+    width: 100%
+    overflow: hidden
+
+    .content
+      width: 100%
+      height: 100%
+
+      .chart-back
+        fill: var(--border_12)
+
+      .x-axis-tick-caption
+        fill: var(--text_secondary)
+        font-size: 13px
+        font-weight: 600
+        text-anchor: middle
+
+      .bar-text-caption
+        font-size: 15px
+        font-weight: 600
 </style>
