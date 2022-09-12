@@ -22,7 +22,7 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
   #vueComponent;
 
   #config = {
-    ...this.defaultConfig,
+    // ...this.defaultConfig,
     titleColName: 'title',
     barParts: defaultBarParts,
     dataSource: '',
@@ -167,7 +167,7 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
             required: true,
           },
         },
-        ...this.defaultFields,
+        // ...this.defaultFields,
         {
           component: 'text',
           propName: 'titleColName',
