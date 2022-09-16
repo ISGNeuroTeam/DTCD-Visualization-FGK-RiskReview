@@ -29,7 +29,7 @@
     </div>
   </div>
 </template>
- 
+
 <script>
 import defaultBarParts from './utils/defaultBarParts';
 
@@ -255,6 +255,9 @@ export default {
           .attr('width', d => {
             const width = Math.abs(xScale(d[id]) - xScale(0));
             return isNaN(width) ? 0 : width;
+          })
+          .on('click', (event, d) => {
+              this.$root.publishEventClicked(d);
           });
       }
     },
@@ -308,7 +311,7 @@ export default {
   width: 100%
   height: 100%
   display: flex
-  font-family: 'Proxima Nova'
+  font-family: 'Proxima Nova', serif
   position: relative
 
   .DataError

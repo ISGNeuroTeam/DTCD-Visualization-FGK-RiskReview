@@ -8,7 +8,7 @@ import {
   EventSystemAdapter,
   StorageSystemAdapter,
   DataSourceSystemAdapter,
-} from './../../DTCD-SDK';
+} from '../../DTCD-SDK';
 
 export class VisualizationFgkRiskReview extends PanelPlugin {
 
@@ -22,6 +22,7 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
   #vueComponent;
 
   #config = {
+    // ...this.defaultConfig,
     titleColName: 'title',
     barParts: defaultBarParts,
     dataSource: '',
@@ -38,7 +39,7 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
     this.#guid = guid;
     this.#logSystem = new LogSystemAdapter('0.5.0', guid, pluginMeta.name);
     this.#eventSystem = new EventSystemAdapter('0.4.0', guid);
-    this.#eventSystem.registerPluginInstance(this);
+    this.#eventSystem.registerPluginInstance(this, ['Clicked']);
     this.#storageSystem = new StorageSystemAdapter('0.5.0');
     this.#dataSourceSystem = new DataSourceSystemAdapter('0.2.0');
 
@@ -51,6 +52,11 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
     const view = new VueJS({
       data: () => ({}),
       render: h => h(PluginComponent),
+      methods: {
+        publishEventClicked: (value) => {
+          this.#eventSystem.publishEvent('Clicked', value);
+        },
+      }
     }).$mount(selector);
 
     this.#vueComponent = view.$children[0];
@@ -72,6 +78,15 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
     this.loadData(data);
   }
 
+  setVueComponentPropValue(prop, value) {
+    const methodName = `set${prop.charAt(0).toUpperCase() + prop.slice(1)}`;
+    if (this.#vueComponent[methodName]) {
+      this.#vueComponent[methodName](value)
+    } else {
+      throw new Error(`В компоненте отсутствует метод ${methodName} для присвоения свойства ${prop}`)
+    }
+  }
+
   setPluginConfig(config = {}) {
     this.#logSystem.debug(`Set new config to ${this.#id}`);
     this.#logSystem.info(`Set new config to ${this.#id}`);
@@ -81,10 +96,9 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
     for (const [prop, value] of Object.entries(config)) {
       if (!configProps.includes(prop)) continue;
 
-      if (prop === 'titleColName') this.#vueComponent.setTitleColName(value);
-      if (prop === 'barParts') this.#vueComponent.setBarParts(value);
-
-      if (prop === 'dataSource' && value) {
+      if (prop !== 'dataSource') {
+        this.setVueComponentPropValue(prop, value)
+      } else if (value) {
         if (this.#config[prop]) {
           this.#logSystem.debug(
             `Unsubscribing ${this.#id} from DataSourceStatusUpdate({ dataSource: ${this.#config[prop]}, status: success })`
@@ -153,6 +167,7 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
             required: true,
           },
         },
+        // ...this.defaultFields,
         {
           component: 'text',
           propName: 'titleColName',
