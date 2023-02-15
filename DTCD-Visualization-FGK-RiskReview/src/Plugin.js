@@ -19,6 +19,7 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
   #storageSystem;
   #dataSourceSystem;
   #dataSourceSystemGUID;
+  #vue;
   #vueComponent;
 
   #config = {
@@ -49,7 +50,7 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
 
     const { default: VueJS } = this.getDependence('Vue');
 
-    const view = new VueJS({
+    this.#vue = new VueJS({
       data: () => ({}),
       render: h => h(PluginComponent),
       methods: {
@@ -59,9 +60,19 @@ export class VisualizationFgkRiskReview extends PanelPlugin {
       }
     }).$mount(selector);
 
-    this.#vueComponent = view.$children[0];
+    this.#vueComponent = this.#vue.$children[0];
+
+    this.setResizeObserver(this.#vue.$el, (size) => {
+      this.#vue.$emit('resize', size)
+    });
+
     this.#logSystem.debug(`${this.#id} initialization complete`);
     this.#logSystem.info(`${this.#id} initialization complete`);
+  }
+
+  beforeUninstall() {
+    this.resizeObserver.unobserve(this.#vue.$el);
+    this.#vue.$destroy();
   }
 
   loadData(data) {

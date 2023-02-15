@@ -71,6 +71,7 @@ export default {
     /** Used to support scoped styles. */
     this.dataAttr = attrs.find(attr => attr.startsWith('data-'));
     this.render();
+    this.$root.$on('resize', this.onResize);
   },
   methods: {
     setDataset(data = []) {
@@ -296,6 +297,16 @@ export default {
           }
         });
       }
+    },
+
+    onResize() {
+      if (this.resizeTimeout) {
+        clearTimeout(this.resizeTimeout);
+      }
+      this.resizeTimeout = setTimeout(() => {
+        this.render();
+        this.resizeTimeout = null;
+      }, 50);
     },
   },
 };
