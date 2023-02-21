@@ -187,9 +187,16 @@ export default {
     },
 
     createAxisX() {
+      const paddingXOfChart = 70;
+      const sizeOfChar = 10;
+      const paddingXOfChar = 16;
+      const sizeOfNumber = this.getMaxCountChars() * sizeOfChar + paddingXOfChar;
+
       const axis = this.svg
         .append('g')
-        .call(d3.axisBottom(this.xScale));
+        .call(d3.axisBottom(this.xScale)
+                .ticks((this.width - paddingXOfChart) / sizeOfNumber)
+        );
 
       axis.selectAll('.tick line').each(function() {
         d3.select(this).remove();
@@ -307,6 +314,22 @@ export default {
         this.render();
         this.resizeTimeout = null;
       }, 50);
+    },
+
+    getMaxCountChars() {
+      let maxNumLength = 0;
+
+      this.barParts.forEach(part => {
+        this.dataset.forEach(ds => {
+          const number = ds[part.id];
+          const numLength = String(number).length;
+          if (numLength > maxNumLength) {
+            maxNumLength = numLength;
+          }
+        });
+      });
+
+      return maxNumLength;
     },
   },
 };
