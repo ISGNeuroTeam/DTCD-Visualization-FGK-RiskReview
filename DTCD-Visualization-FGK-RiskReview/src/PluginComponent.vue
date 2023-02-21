@@ -4,29 +4,34 @@
       <span class="FontIcon name_infoCircleOutline Icon"></span>
       {{ errorMessage }}
     </div>
-    <div v-show="!isDataError" class="titles-container" :style="titlesContainerStyle">
-      <div
-        v-for="(title, i) in titles"
-        :key="`t-${i}`"
-        class="bar-title"
-        :style="{
-          height: `${barHeight}px`,
-          marginTop: `${i === 0 ? 0 : chartPaddingInner}px`
-        }"
-        v-text="title"
-      />
-    </div>
-    <div v-show="!isDataError" ref="svgContainer" class="svg-container"/>
-    <div v-show="!isDataError" class="legend-container">
-      <div
-        v-for="(part, i) in barParts"
-        :key="`legend-${i}`"
-        class="item"
-      >
-        <div class="mark" :style="{ backgroundColor: part.fill }"/>
-        <div class="text" v-text="part.title"/>
+
+    <template v-show="!isDataError">
+      <div class="titles-container" :style="titlesContainerStyle">
+        <div
+          v-for="(title, i) in titles"
+          :key="`t-${i}`"
+          class="bar-title"
+          :style="{
+            height: `${barHeight}px`,
+            marginTop: `${i === 0 ? 0 : chartPaddingInner}px`
+          }"
+          v-text="title"
+        />
       </div>
-    </div>
+
+      <div ref="svgContainer" class="svg-container"/>
+
+      <div class="legend-container">
+        <div
+          v-for="(part, i) in barParts"
+          :key="`legend-${i}`"
+          class="item"
+        >
+          <div class="mark" :style="{ backgroundColor: part.fill }"/>
+          <div class="text" v-text="part.title"/>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -45,8 +50,8 @@ export default {
     height: 0,
     xScale: null,
     yScale: null,
-    marginX: 15,
-    marginY: 15,
+    marginX: 0,
+    marginY: 0,
     barHeight: 0,
     chartPaddingInner: 0,
     chartPaddingOuter: 0,
@@ -138,10 +143,9 @@ export default {
 
     prepareRenderData() {
       const { svgContainer } = this.$refs;
-      const { offsetWidth, offsetHeight } = svgContainer;
 
-      this.width = offsetWidth - this.marginX * 2;
-      this.height = offsetHeight - this.marginY * 2;
+      this.width = svgContainer.offsetWidth - this.marginX * 2;
+      this.height = svgContainer.offsetHeight - this.marginY * 2;
 
       this.svg = d3.select(svgContainer)
         .append('svg')
@@ -155,8 +159,8 @@ export default {
         .attr('class', 'chart-back')
         .attr('x', 0)
         .attr('y', 0)
-        .attr('width', this.width)
-        .attr('height', this.height)
+        .attr('width', '100%')
+        .attr('height', '100%')
 
       const extent = [];
 
@@ -175,6 +179,7 @@ export default {
       const padInner = 0.3;
       const padOuter = 0.7;
 
+      this.height = svgContainer.offsetHeight - this.marginY * 2;
       this.yScale = d3.scaleBand()
         .range([0, this.height])
         .domain(this.dataset.map((b, i) => i))
@@ -311,6 +316,15 @@ export default {
         clearTimeout(this.resizeTimeout);
       }
       this.resizeTimeout = setTimeout(() => {
+        const {
+          offsetWidth,
+          classList,
+        } = this.$el;
+
+        offsetWidth < 600
+          ? classList.add('mobileLayout')
+          : classList.remove('mobileLayout');
+
         this.render();
         this.resizeTimeout = null;
       }, 50);
@@ -342,11 +356,13 @@ export default {
   padding: 0
 
 .FGKRiskReview
-  width: 100%
-  height: 100%
-  display: flex
   font-family: 'Proxima Nova', serif
   position: relative
+  display: flex
+  gap: 10px
+  padding: 10px
+  width: 100%
+  min-height: 100%
 
   .DataError
     position: absolute
@@ -371,23 +387,22 @@ export default {
     .bar-title
       display: flex
       align-items: center
-      padding-left: 16px
+      justify-content: flex-end
+      text-align: right
       line-height: 18px
 
   .legend-container
     display: flex
     flex-direction: column
     justify-content: center
+    gap: 10px
 
     .item
       display: flex
       align-items: center
+      gap: 5px
       color: var(--text_main)
       font-size: 15px
-      line-height: 18px
-
-      &:not(:last-child)
-        margin-bottom: 20px
 
       .mark
         flex-shrink: 0
@@ -395,8 +410,7 @@ export default {
         height: 18px
 
       .text
-        padding-left: 10px
-        padding-right: 16px
+        line-height: 18px
 
   .svg-container
     width: 100%
@@ -418,4 +432,19 @@ export default {
       .bar-text-caption
         font-size: 15px
         font-weight: 600
+
+  &.mobileLayout
+    flex-wrap: wrap
+    row-gap: 15px
+
+    .titles-container
+      max-width: calc(40% - 5px)
+
+    .svg-container
+      max-width: calc(60% - 5px)
+
+    .legend-container
+      align-items: flex-start
+      flex-direction: row
+      flex-wrap: wrap
 </style>
