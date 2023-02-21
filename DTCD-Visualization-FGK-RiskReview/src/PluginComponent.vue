@@ -46,8 +46,6 @@ export default {
     errorMessage: '',
     dataAttr: '',
     svg: null,
-    width: 0,
-    height: 0,
     xScale: null,
     yScale: null,
     marginX: 0,
@@ -144,9 +142,6 @@ export default {
     prepareRenderData() {
       const { svgContainer } = this.$refs;
 
-      this.width = svgContainer.offsetWidth - this.marginX * 2;
-      this.height = svgContainer.offsetHeight - this.marginY * 2;
-
       this.svg = d3.select(svgContainer)
         .append('svg')
         .attr(this.dataAttr, '')
@@ -171,17 +166,18 @@ export default {
       })
 
       const xDomain = d3.extent(extent);
+      const width = svgContainer.offsetWidth - this.marginX * 2;
 
       this.xScale = d3.scaleLinear()
-        .range([35, this.width - 35])
+        .range([35, width - 35])
         .domain(d3.extent(xDomain));
 
       const padInner = 0.3;
       const padOuter = 0.7;
+      const height = svgContainer.offsetHeight - this.marginY * 2;
 
-      this.height = svgContainer.offsetHeight - this.marginY * 2;
       this.yScale = d3.scaleBand()
-        .range([0, this.height])
+        .range([0, height])
         .domain(this.dataset.map((b, i) => i))
         .paddingInner(padInner)
         .paddingOuter(padOuter);
@@ -196,11 +192,12 @@ export default {
       const sizeOfChar = 10;
       const paddingXOfChar = 16;
       const sizeOfNumber = this.getMaxCountChars() * sizeOfChar + paddingXOfChar;
+      const widthSVGContainer = this.$refs.svgContainer.offsetWidth - this.marginX * 2;
 
       const axis = this.svg
         .append('g')
         .call(d3.axisBottom(this.xScale)
-                .ticks((this.width - paddingXOfChart) / sizeOfNumber)
+                .ticks((widthSVGContainer - paddingXOfChart) / sizeOfNumber)
         );
 
       axis.selectAll('.tick line').each(function() {
